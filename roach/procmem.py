@@ -216,10 +216,7 @@ class ProcessMemory(object):
         """Performs a regex on the file, must use mmap(2) loading."""
         if not self.load:
             raise RuntimeError("can only regex on a file!")
-        if offset and length:
-            chunk = self.m[offset:offset+length]
-        else:
-            chunk = self.m
+        chunk = self.m[offset:offset+length] if offset and length else self.m
         for entry in re.finditer(query, chunk, re.DOTALL):
             yield offset + entry.start()
 
@@ -231,8 +228,7 @@ class ProcessMemory(object):
         else:
             offset = length = 0
         for offset in self.regexp(query, offset, length):
-            addr = self.p2v(offset)
-            if addr:
+            if addr := self.p2v(offset):
                 yield addr
 
     def disasmv(self, addr, size):

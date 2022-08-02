@@ -56,9 +56,7 @@ class Structure(object):
             ret._parent_._values_ = ret
 
         # Allow caller to omit the [:] part.
-        if hasattr(ret, "__getitem__"):
-            return ret[:]
-        return ret
+        return ret[:] if hasattr(ret, "__getitem__") else ret
 
     def as_dict(self, values=None):
         ret = {}

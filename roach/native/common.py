@@ -16,9 +16,7 @@ ext = {
 }[sys.platform]
 
 def load_library(name, windows_calling_convention="windll"):
-    filepath = os.path.join(
-        components, "%s-%s.%s" % (name, 64 if is64bit else 32, ext)
-    )
+    filepath = os.path.join(components, f"{name}-{64 if is64bit else 32}.{ext}")
     if not os.path.exists(filepath):
         raise ImportError("Your platform is not supported!")
 

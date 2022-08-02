@@ -55,14 +55,8 @@ class Operand(object):
     @property
     def mem(self):
         mem = self.op.value.mem
-        if mem.base:
-            base = self.regs[mem.base]
-        else:
-            base = None
-        if mem.index:
-            index, scale = self.regs[mem.index], mem.scale
-        else:
-            index, scale = None, None
+        base = self.regs[mem.base] if mem.base else None
+        index, scale = (self.regs[mem.index], mem.scale) if mem.index else (None, None)
         return Memory(self.sizes[self.op.size], base, scale, index, mem.disp)
 
     def __cmp__(self, other):
@@ -77,9 +71,7 @@ class Operand(object):
             other = other,
         if self.is_reg and self.reg in other:
             return 0
-        if self.is_mem and self.reg in other:
-            return 0
-        return -1
+        return 0 if self.is_mem and self.reg in other else -1
 
     def __str__(self):
         if self.is_imm:
@@ -96,7 +88,7 @@ class Operand(object):
             if m.disp:
                 # TODO x86_64 support.
                 s.append("0x%08x" % (m.disp % 2**32))
-            return "%s [%s]" % (m.size, "+".join(s))
+            return f'{m.size} [{"+".join(s)}]'
 
 class Instruction(object):
     def __init__(self, mnem=None, op1=None, op2=None, op3=None, addr=None):
@@ -109,9 +101,11 @@ class Instruction(object):
         self.insn = insn
         self.mnem = insn.mnemonic
 
-        operands = []
-        for op in insn.operands + [None, None, None]:
-            operands.append(Operand(op) if op else None)
+        operands = [
+            Operand(op) if op else None
+            for op in insn.operands + [None, None, None]
+        ]
+
         self.operands = operands[0], operands[1], operands[2]
 
     @staticmethod
@@ -141,9 +135,7 @@ class Instruction(object):
             return -1
         if self.mnem != other.mnem or self.addr != other.addr:
             return -1
-        if self.operands == other.operands:
-            return 0
-        return -1
+        return 0 if self.operands == other.operands else -1
 
     def __str__(self):
         operands = []
@@ -153,9 +145,7 @@ class Instruction(object):
             operands.append(str(self.op2))
         if self.op3 is not None:
             operands.append(str(self.op3))
-        if operands:
-            return "%s %s" % (self.mnem, ", ".join(operands))
-        return self.mnem
+        return f'{self.mnem} {", ".join(operands)}' if operands else self.mnem
 
 class Disassemble(object):
     def disassemble(self, data, addr):
@@ -163,10 +153,7 @@ class Disassemble(object):
 
         cs = capstone.Cs(capstone.CS_ARCH_X86, capstone.CS_MODE_32)
         cs.detail = True
-        ret = []
-        for insn in cs.disasm(data, addr):
-            ret.append(Instruction.from_capstone(insn))
-        return ret
+        return [Instruction.from_capstone(insn) for insn in cs.disasm(data, addr)]
 
     def init_once(self, *args, **kwargs):
         import capstone.x86
